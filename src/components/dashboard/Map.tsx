@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
 
 // Fix for default icon issue with bundlers like Vite
@@ -32,15 +33,28 @@ const stationIcon = new L.Icon({
 interface MapProps {
   center: [number, number];
   zoom: number;
-  incidents: { coords: [number, number] }[];
+  incidents: { coords: [number, number]; id?: string }[];
   stations: { name: string, coords: [number, number] }[];
   dronePath?: [number, number][];
   activeDrone?: any;
   droneStage?: string | null;
   droneStageImage?: string;
+  currentDronePosition?: [number, number];
+  selectedIncidentId?: string;
 }
 
-const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath, activeDrone, droneStage, droneStageImage }) => {
+const Map: React.FC<MapProps> = ({
+  center,
+  zoom,
+  incidents,
+  stations,
+  dronePath,
+  activeDrone,
+  droneStage,
+  droneStageImage,
+  currentDronePosition,
+  selectedIncidentId
+}) => {
   // Leaflet expects [lat, lon], while our data is [lon, lat]. We swap them here.
   const leafletCenter: [number, number] = [center[1], center[0]];
   const leafletIncidents = incidents.map(incident => ({
@@ -71,11 +85,28 @@ const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath,
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {leafletIncidents.map((incident, idx) => (
-        <Marker key={`incident-${idx}`} position={incident.coords} icon={incidentIcon}>
-          <Popup>An incident is reported here.</Popup>
-        </Marker>
-      ))}
+      {leafletIncidents.map((incident, idx) => {
+        // Highlight selected incident
+        if (incident.id && incident.id === selectedIncidentId) {
+          return (
+            <React.Fragment key={`incident-selected-${incident.id}`}>
+              <Marker position={incident.coords} icon={incidentIcon}>
+                <Popup><div className="font-semibold text-primary">Selected Incident<br />An incident is reported here.</div></Popup>
+              </Marker>
+              <CircleMarker
+                center={incident.coords}
+                radius={18}
+                pathOptions={{ color: '#ffc107', weight: 3, fillOpacity: 0.1, dashArray: '3 6' }}
+              />
+            </React.Fragment>
+          )
+        }
+        return (
+          <Marker key={`incident-${idx}`} position={incident.coords} icon={incidentIcon}>
+            <Popup>An incident is reported here.</Popup>
+          </Marker>
+        );
+      })}
       {leafletStations.map((station) => (
         <Marker key={station.name} position={station.coords} icon={stationIcon}>
           <Popup>{station.name}</Popup>
@@ -88,30 +119,46 @@ const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath,
             pathOptions={{ color: '#87CEEB', dashArray: '7,12', weight: 5, opacity: 0.7 }} 
             positions={leafletDronePath} 
           />
-          {/* Simulated drone position as animated marker */}
-          <Marker
-            position={
-              droneStage === "En Route"
-                ? leafletDronePath[1]
-                : droneStage === "Returning to Base"
-                ? leafletDronePath[0]
-                : (
-                    droneStage === "Arrived On Site" || droneStage === "Surveillance" || droneStage === "Active Firefighting" || droneStage === "Fire Extinguished"
-                  )
-                ? leafletDronePath[1]
-                : leafletDronePath[0]
-            }
-            icon={droneIcon}
-          >
-            <Popup>
-              <div className="text-center">
-                <img src={droneStageImage || activeDrone.imageUrl} alt={activeDrone?.name} className="w-16 h-16 mx-auto object-cover rounded mb-2" />
-                <div className="font-medium">{activeDrone?.name || "Drone"}</div>
-                <div className="text-xs text-muted-foreground">{droneStage}</div>
-              </div>
-            </Popup>
-          </Marker>
         </>
+      )}
+      {currentDronePosition && activeDrone && (
+        <Marker
+          position={[currentDronePosition[1], currentDronePosition[0]]}
+          icon={droneIcon}
+        >
+          <Popup>
+            <div className="text-center">
+              <img src={droneStageImage || activeDrone.imageUrl} alt={activeDrone?.name} className="w-16 h-16 mx-auto object-cover rounded mb-2" />
+              <div className="font-medium">{activeDrone?.name || "Drone"}</div>
+              <div className="text-xs text-muted-foreground">{droneStage}</div>
+            </div>
+          </Popup>
+        </Marker>
+      )}
+      {/* Show stationary marker if drone is not moving */}
+      {!currentDronePosition && leafletDronePath && activeDrone && (
+        <Marker
+          position={
+            droneStage === "En Route"
+              ? leafletDronePath[1]
+              : droneStage === "Returning to Base"
+              ? leafletDronePath[0]
+              : (
+                  droneStage === "Arrived On Site" || droneStage === "Surveillance" || droneStage === "Active Firefighting" || droneStage === "Fire Extinguished"
+                )
+              ? leafletDronePath[1]
+              : leafletDronePath[0]
+          }
+          icon={droneIcon}
+        >
+          <Popup>
+            <div className="text-center">
+              <img src={droneStageImage || activeDrone.imageUrl} alt={activeDrone?.name} className="w-16 h-16 mx-auto object-cover rounded mb-2" />
+              <div className="font-medium">{activeDrone?.name || "Drone"}</div>
+              <div className="text-xs text-muted-foreground">{droneStage}</div>
+            </div>
+          </Popup>
+        </Marker>
       )}
     </MapContainer>
   );

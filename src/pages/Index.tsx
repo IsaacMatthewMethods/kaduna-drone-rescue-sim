@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Map from '@/components/dashboard/Map';
 import IncidentsPanel from '@/components/dashboard/IncidentsPanel';
 import DronesPanel from '@/components/dashboard/DronesPanel';
@@ -61,6 +61,8 @@ const Index = () => {
   const [dronePath, setDronePath] = useState<[number, number][] | undefined>();
   const [droneStage, setDroneStage] = useState<string | null>(null);
   const [activeDrone, setActiveDrone] = useState<Drone | null>(null);
+  const [currentDronePosition, setCurrentDronePosition] = useState<[number, number] | undefined>(undefined);
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add new incident from localStorage fire reports on page load
   useEffect(() => {
@@ -163,6 +165,51 @@ const Index = () => {
     addLog(`New incident reported at ${newIncident.location}.`);
   };
 
+  // Animate drone movement between points
+  useEffect(() => {
+    if (!dronePath || !activeDrone || !droneStage || ["Arrived On Site", "Surveillance", "Active Firefighting", "Fire Extinguished", "Charging", "Ready", null].includes(droneStage)) {
+      setCurrentDronePosition(undefined);
+      if (animationRef.current) clearInterval(animationRef.current);
+      return;
+    }
+
+    let from: [number, number];
+    let to: [number, number];
+    let duration = 4000; // ms for En Route, 5000 for Returning
+    if (droneStage === "En Route") {
+      from = dronePath[0];
+      to = dronePath[1];
+      duration = 4000;
+    } else if (droneStage === "Returning to Base") {
+      from = dronePath[1];
+      to = dronePath[0];
+      duration = 5000;
+    } else {
+      setCurrentDronePosition(undefined);
+      if (animationRef.current) clearInterval(animationRef.current);
+      return;
+    }
+
+    const start = Date.now();
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - start;
+      const t = Math.min(1, elapsed / duration);
+      // Linear interpolation
+      const lat = from[0] + (to[0] - from[0]) * t;
+      const lng = from[1] + (to[1] - from[1]) * t;
+      setCurrentDronePosition([lat, lng]);
+      if (t < 1) {
+        animationRef.current = setTimeout(animate, 30);
+      }
+    };
+    animate();
+
+    return () => {
+      if (animationRef.current) clearTimeout(animationRef.current);
+    };
+  }, [dronePath, activeDrone, droneStage]);
+
   return (
     <div className="h-screen w-screen bg-background text-foreground p-4 flex flex-col gap-4 overflow-hidden">
       <header className="flex justify-between items-center animate-fade-in">
@@ -194,6 +241,8 @@ const Index = () => {
             activeDrone={activeDrone}
             droneStage={droneStage}
             droneStageImage={droneStage ? droneStageImages[droneStage] : undefined}
+            currentDronePosition={currentDronePosition}
+            selectedIncidentId={selectedIncident?.id}
           />
           {droneStage && (
             <div className="absolute top-4 right-4 z-[5000] bg-black/80 rounded-xl p-4 shadow-2xl flex items-center gap-3 animate-fade-in">
