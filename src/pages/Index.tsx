@@ -70,7 +70,7 @@ const Index = () => {
         id: r.id,
         location: r.location,
         coords: r.coords,
-        status: "Reported",
+        status: "Reported" as "Reported", // Cast explicitly to satisfy Incident type
         report: r.description,
         timestamp: r.timestamp,
       }));
