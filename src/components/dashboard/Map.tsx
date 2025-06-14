@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
 import L from 'leaflet';
 
 // Fix for default icon issue with bundlers like Vite
-// See: https://github.com/PaulLeCam/react-leaflet/issues/453
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -52,6 +51,13 @@ const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath 
   }));
   const leafletDronePath = dronePath?.map(coord => [coord[1], coord[0]] as [number, number]);
 
+  // Debug what is rendered as children!
+  console.log("[Map.tsx] Rendering MapContainer with children.", { 
+    leafletIncidents,
+    leafletStations,
+    leafletDronePath
+  });
+
   return (
     <MapContainer center={leafletCenter} zoom={zoom} scrollWheelZoom={true} className="w-full h-full rounded-lg shadow-2xl">
       <TileLayer
@@ -79,3 +85,4 @@ const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath 
 };
 
 export default Map;
+
