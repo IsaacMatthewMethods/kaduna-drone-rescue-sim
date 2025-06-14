@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -64,8 +63,8 @@ const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath 
           <Popup>An incident is reported here.</Popup>
         </Marker>
       ))}
-      {stations.map((station) => (
-        <Marker key={station.name} position={[station.coords[1], station.coords[0]]} icon={stationIcon}>
+      {leafletStations.map((station) => (
+        <Marker key={station.name} position={station.coords} icon={stationIcon}>
           <Popup>{station.name}</Popup>
         </Marker>
       ))}
