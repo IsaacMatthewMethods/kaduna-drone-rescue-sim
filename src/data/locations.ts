@@ -1,5 +1,10 @@
 
-export const kadunaLocations = [
+export type Location = {
+  name: string;
+  coords: [number, number];
+};
+
+export const kadunaLocations: Location[] = [
   { name: "Kaduna Polytechnic", coords: [7.4833, 10.5333] },
   { name: "KASU", coords: [7.4497, 10.5283] },
   { name: "Ahmadu Bello University", coords: [7.6278, 11.1214] },
@@ -22,7 +27,7 @@ export const kadunaLocations = [
   { name: "Zaria", coords: [7.7167, 11.0833] },
 ];
 
-export const droneStations = [
+export const droneStations: Location[] = [
     { name: "Alpha Station", coords: [7.46, 10.54] },
     { name: "Bravo Station", coords: [7.37, 10.44] },
 ];

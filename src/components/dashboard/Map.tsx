@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl, { LngLatLike, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -9,9 +8,9 @@ import { toast } from 'sonner';
 interface MapProps {
   center: LngLatLike;
   zoom: number;
-  incidents: { coords: LngLatLike }[];
-  stations: { name: string, coords: LngLatLike }[];
-  dronePath?: LngLatLike[];
+  incidents: { coords: [number, number] }[];
+  stations: { name: string, coords: [number, number] }[];
+  dronePath?: [number, number][];
 }
 
 const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath }) => {
