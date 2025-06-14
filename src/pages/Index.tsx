@@ -10,6 +10,7 @@ import { drones as initialDrones, Drone } from '@/data/drones';
 import { droneStations, kadunaLocations } from '@/data/locations';
 import { toast } from 'sonner';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
+import DroneProgress from '@/components/dashboard/DroneProgress';
 
 const droneStages = [
   "Preparing for Takeoff",
@@ -218,6 +219,15 @@ const Index = () => {
             <StatusLog logs={logs}/>
         </div>
       </main>
+
+      {/* Drone Progress Section below the simulation/map */}
+      {droneStage && (
+        <DroneProgress
+          stages={droneStages}
+          currentStage={droneStage}
+          activeDrone={activeDrone ? { name: activeDrone.name } : undefined}
+        />
+      )}
 
       <FireReportForm 
         isOpen={isReportFormOpen}
