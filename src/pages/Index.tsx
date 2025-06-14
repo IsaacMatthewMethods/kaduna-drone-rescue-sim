@@ -39,6 +39,18 @@ const droneStageImages: Record<string, string> = {
   "Ready": "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?auto=format&fit=crop&w=400&q=80",
 };
 
+// Function to fetch fire reports from localStorage
+function getLocalFireReports() {
+  try {
+    const fireReportKey = "fireReports";
+    const reports: any[] = JSON.parse(localStorage.getItem(fireReportKey) || "[]");
+    // Convert location/coords to correct types (safety)
+    return Array.isArray(reports) ? reports : [];
+  } catch {
+    return [];
+  }
+}
+
 const Index = () => {
   const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
   const [drones, setDrones] = useState<Drone[]>(initialDrones);
@@ -48,6 +60,25 @@ const Index = () => {
   const [dronePath, setDronePath] = useState<[number, number][] | undefined>();
   const [droneStage, setDroneStage] = useState<string | null>(null);
   const [activeDrone, setActiveDrone] = useState<Drone | null>(null);
+
+  // Add new incident from localStorage fire reports on page load
+  useEffect(() => {
+    const fireReports = getLocalFireReports();
+    if (fireReports.length > 0) {
+      const formatted = fireReports.map((r) => ({
+        id: r.id,
+        location: r.location,
+        coords: r.coords,
+        status: "Reported",
+        report: r.description,
+        timestamp: r.timestamp,
+      }));
+      setIncidents(prev => [...formatted, ...prev]);
+      setTimeout(() => {
+        localStorage.removeItem("fireReports"); // Clear after loading into dashboard
+      }, 500);
+    }
+  }, []);
 
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
