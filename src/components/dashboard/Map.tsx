@@ -1,12 +1,39 @@
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl, { LngLatLike, Marker } from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default icon issue with bundlers like Vite
+// See: https://github.com/PaulLeCam/react-leaflet/issues/453
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+
+// Custom icons to differentiate markers
+const incidentIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const stationIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
 interface MapProps {
-  center: LngLatLike;
+  center: [number, number];
   zoom: number;
   incidents: { coords: [number, number] }[];
   stations: { name: string, coords: [number, number] }[];
@@ -14,118 +41,42 @@ interface MapProps {
 }
 
 const Map: React.FC<MapProps> = ({ center, zoom, incidents, stations, dronePath }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [isTokenSet, setIsTokenSet] = useState(false);
+  // Leaflet expects [lat, lon], while our data is [lon, lat]. We swap them here.
+  const leafletCenter: [number, number] = [center[1], center[0]];
+  const leafletIncidents = incidents.map(incident => ({
+    ...incident,
+    coords: [incident.coords[1], incident.coords[0]] as [number, number]
+  }));
+  const leafletStations = stations.map(station => ({
+    ...station,
+    coords: [station.coords[1], station.coords[0]] as [number, number]
+  }));
+  const leafletDronePath = dronePath?.map(coord => [coord[1], coord[0]] as [number, number]);
 
-  const initMap = () => {
-    if (map.current || !mapContainer.current || !mapboxToken) return;
-
-    mapboxgl.accessToken = mapboxToken;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: center,
-      zoom: zoom,
-      pitch: 45,
-    });
-
-    map.current.on('load', () => {
-      // Add incidents as markers
-      incidents.forEach(incident => {
-        new Marker({ color: '#f44336' })
-          .setLngLat(incident.coords)
-          .addTo(map.current!);
-      });
-
-      // Add stations as markers
-      stations.forEach(station => {
-        new Marker({ color: '#2196f3' })
-            .setLngLat(station.coords)
-            .setPopup(new mapboxgl.Popup().setText(station.name))
-            .addTo(map.current!);
-      });
-      setIsTokenSet(true);
-      toast.success("Map initialized successfully!");
-    });
-  };
-
-  useEffect(() => {
-    if (isTokenSet && map.current && dronePath) {
-      const sourceId = 'drone-path';
-      const layerId = 'drone-path-layer';
-
-      if (map.current.getSource(sourceId)) {
-        (map.current.getSource(sourceId) as mapboxgl.GeoJSONSource).setData({
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: dronePath,
-          },
-        });
-      } else {
-        map.current.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: dronePath,
-            },
-          },
-        });
-
-        map.current.addLayer({
-          id: layerId,
-          type: 'line',
-          source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': '#87CEEB',
-            'line-width': 4,
-            'line-dasharray': [0, 2],
-          },
-        });
-        
-        const pathAnimation = () => {
-           // Your animation logic here...
-        };
-        pathAnimation();
-      }
-    }
-  }, [dronePath, isTokenSet]);
-
-  if (!isTokenSet) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900/50 rounded-lg p-4">
-        <h3 className="text-xl font-semibold mb-4 text-white">Mapbox Access Token Required</h3>
-        <p className="text-sm text-gray-400 mb-4 max-w-md text-center">
-          To display the interactive map, please provide your Mapbox public access token. You can get one for free from{' '}
-          <a href="https://www.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-            mapbox.com
-          </a>.
-        </p>
-        <div className="flex w-full max-w-sm items-center space-x-2">
-          <Input
-            type="text"
-            placeholder="pk.ey..."
-            value={mapboxToken}
-            onChange={(e) => setMapboxToken(e.target.value)}
-            className="text-white"
-          />
-          <Button type="submit" onClick={initMap}>Set Token</Button>
-        </div>
-      </div>
-    );
-  }
-
-  return <div ref={mapContainer} className="w-full h-full rounded-lg shadow-2xl" />;
+  return (
+    <MapContainer center={leafletCenter} zoom={zoom} scrollWheelZoom={true} className="w-full h-full rounded-lg shadow-2xl">
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      />
+      {leafletIncidents.map((incident, idx) => (
+        <Marker key={`incident-${idx}`} position={incident.coords} icon={incidentIcon}>
+          <Popup>An incident is reported here.</Popup>
+        </Marker>
+      ))}
+      {stations.map((station) => (
+        <Marker key={station.name} position={[station.coords[1], station.coords[0]]} icon={stationIcon}>
+          <Popup>{station.name}</Popup>
+        </Marker>
+      ))}
+      {leafletDronePath && (
+        <Polyline 
+          pathOptions={{ color: '#87CEEB', dashArray: '5, 10' }} 
+          positions={leafletDronePath} 
+        />
+      )}
+    </MapContainer>
+  );
 };
 
 export default Map;
