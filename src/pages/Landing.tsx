@@ -7,18 +7,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { kadunaLocations } from "@/data/locations";
 import { toast } from "sonner"; // Not used but could be shown as inline feedback
 
+// Only use free images of drone firefighting or incident scenes
 const droneImages = [
   {
-    url: "https://images.unsplash.com/photo-1487887235947-a955ef187fcc?auto=format&fit=crop&w=800&q=80",
-    desc: "DJI drone in mid air",
+    url: "https://images.unsplash.com/photo-1606925797303-06c1900aae12?auto=format&fit=crop&w=800&q=80",
+    desc: "Firefighting drone spraying water over a blaze",
   },
   {
-    url: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80",
-    desc: "Flying drone at sunset",
+    url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80",
+    desc: "Drone with thermal camera inspecting fire aftermath",
   },
   {
-    url: "https://images.unsplash.com/photo-1472396961693-142e6e269027?auto=format&fit=crop&w=800&q=80",
-    desc: "Drone hovering over the city",
+    url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
+    desc: "Drone surveillance above smoky forest fire area",
   },
 ];
 
