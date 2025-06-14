@@ -62,7 +62,7 @@ const Index = () => {
   const [droneStage, setDroneStage] = useState<string | null>(null);
   const [activeDrone, setActiveDrone] = useState<Drone | null>(null);
   const [currentDronePosition, setCurrentDronePosition] = useState<[number, number] | undefined>(undefined);
-  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const animationRef = useRef<number | null>(null);
 
   // Add new incident from localStorage fire reports on page load
   useEffect(() => {
@@ -165,17 +165,30 @@ const Index = () => {
     addLog(`New incident reported at ${newIncident.location}.`);
   };
 
-  // Animate drone movement between points
+  // Animate drone movement between points - use requestAnimationFrame for smoothness
   useEffect(() => {
-    if (!dronePath || !activeDrone || !droneStage || ["Arrived On Site", "Surveillance", "Active Firefighting", "Fire Extinguished", "Charging", "Ready", null].includes(droneStage)) {
+    if (
+      !dronePath ||
+      !activeDrone ||
+      !droneStage ||
+      [
+        "Arrived On Site",
+        "Surveillance",
+        "Active Firefighting",
+        "Fire Extinguished",
+        "Charging",
+        "Ready",
+        null
+      ].includes(droneStage)
+    ) {
       setCurrentDronePosition(undefined);
-      if (animationRef.current) clearInterval(animationRef.current);
+      if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
       return;
     }
 
     let from: [number, number];
     let to: [number, number];
-    let duration = 4000; // ms for En Route, 5000 for Returning
+    let duration = 4000; // En Route (ms)
     if (droneStage === "En Route") {
       from = dronePath[0];
       to = dronePath[1];
@@ -186,27 +199,29 @@ const Index = () => {
       duration = 5000;
     } else {
       setCurrentDronePosition(undefined);
-      if (animationRef.current) clearInterval(animationRef.current);
+      if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
       return;
     }
 
-    const start = Date.now();
-    const animate = () => {
-      const now = Date.now();
+    const start = performance.now();
+    function animate(now: number) {
       const elapsed = now - start;
       const t = Math.min(1, elapsed / duration);
-      // Linear interpolation
-      const lat = from[0] + (to[0] - from[0]) * t;
-      const lng = from[1] + (to[1] - from[1]) * t;
+      // Smooth ease-in-out
+      const ease = t < 0.5
+        ? 2 * t * t
+        : -1 + (4 - 2 * t) * t;
+      const lat = from[0] + (to[0] - from[0]) * ease;
+      const lng = from[1] + (to[1] - from[1]) * ease;
       setCurrentDronePosition([lat, lng]);
       if (t < 1) {
-        animationRef.current = setTimeout(animate, 30);
+        animationRef.current = requestAnimationFrame(animate);
       }
-    };
-    animate();
+    }
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (animationRef.current) clearTimeout(animationRef.current);
+      if (animationRef.current !== null) cancelAnimationFrame(animationRef.current);
     };
   }, [dronePath, activeDrone, droneStage]);
 

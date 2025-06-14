@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet';
 import L from 'leaflet';
@@ -55,7 +54,7 @@ const Map: React.FC<MapProps> = ({
   currentDronePosition,
   selectedIncidentId
 }) => {
-  // Leaflet expects [lat, lon], while our data is [lon, lat]. We swap them here.
+  // Map expects [lat, lng], data is [lng, lat].
   const leafletCenter: [number, number] = [center[1], center[0]];
   const leafletIncidents = incidents.map(incident => ({
     ...incident,
@@ -66,6 +65,18 @@ const Map: React.FC<MapProps> = ({
     coords: [station.coords[1], station.coords[0]] as [number, number]
   }));
   const leafletDronePath = dronePath?.map(coord => [coord[1], coord[0]] as [number, number]);
+
+  // Build the dynamic drone marker position according to animation
+  let animatedDronePosition: [number, number] | undefined = undefined;
+  if (
+    currentDronePosition &&
+    Array.isArray(currentDronePosition) &&
+    typeof currentDronePosition[0] === "number" &&
+    typeof currentDronePosition[1] === "number"
+  ) {
+    // currentDronePosition is [lng, lat], swap to [lat, lng] for leaflet
+    animatedDronePosition = [currentDronePosition[1], currentDronePosition[0]];
+  }
 
   // Pick drone marker image if drone is active
   const droneIcon = activeDrone
@@ -80,7 +91,7 @@ const Map: React.FC<MapProps> = ({
     : undefined;
 
   return (
-    <MapContainer center={leafletCenter} zoom={zoom} scrollWheelZoom={true} className="w-full h-full rounded-lg shadow-2xl">
+    <MapContainer center={leafletCenter} zoom={zoom} scrollWheelZoom className="w-full h-full rounded-lg shadow-2xl">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -121,9 +132,10 @@ const Map: React.FC<MapProps> = ({
           />
         </>
       )}
-      {currentDronePosition && activeDrone && (
+      {/* Draw animated drone marker */}
+      {animatedDronePosition && activeDrone && (
         <Marker
-          position={[currentDronePosition[1], currentDronePosition[0]]}
+          position={animatedDronePosition}
           icon={droneIcon}
         >
           <Popup>
@@ -135,8 +147,8 @@ const Map: React.FC<MapProps> = ({
           </Popup>
         </Marker>
       )}
-      {/* Show stationary marker if drone is not moving */}
-      {!currentDronePosition && leafletDronePath && activeDrone && (
+      {/* If stationary, show fixed position */}
+      {!animatedDronePosition && leafletDronePath && activeDrone && (
         <Marker
           position={
             droneStage === "En Route"
