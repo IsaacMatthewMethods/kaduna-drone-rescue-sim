@@ -235,14 +235,17 @@ const Index = () => {
           <Map 
             center={[7.44, 10.52]} 
             zoom={10} 
-            incidents={incidents}
+            incidents={incidents.map(incident => ({
+              ...incident,
+              id: incident.id.toString(),
+            }))}
             stations={droneStations}
             dronePath={dronePath}
             activeDrone={activeDrone}
             droneStage={droneStage}
             droneStageImage={droneStage ? droneStageImages[droneStage] : undefined}
             currentDronePosition={currentDronePosition}
-            selectedIncidentId={selectedIncident?.id}
+            selectedIncidentId={selectedIncident?.id ? selectedIncident.id.toString() : undefined}
           />
           {droneStage && (
             <div className="absolute top-4 right-4 z-[5000] bg-black/80 rounded-xl p-4 shadow-2xl flex items-center gap-3 animate-fade-in">
