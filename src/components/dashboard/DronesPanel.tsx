@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,8 @@ interface DronesPanelProps {
   droneStageImage?: string;
 }
 
-const getStatusIcon = (status: Drone['status']) => {
+// CAST status to allow any string for UI display
+const getStatusIcon = (status: string) => {
   switch (status) {
     case 'Available':
       return <CheckCircle className="text-green-500" size={16} />;
@@ -22,12 +22,31 @@ const getStatusIcon = (status: Drone['status']) => {
       return <Battery className="text-yellow-500" size={16} />;
     case 'Active Firefighting':
       return <Rocket className="text-red-500 animate-pulse" size={16} />;
+    case 'En Route':
+      return <Rocket className="text-blue-400 animate-pulse" size={16} />;
+    case 'On Site':
+      return <CheckCircle className="text-orange-500" size={16} />;
+    case 'Returning':
+      return <Rocket className="text-pink-400 animate-pulse" size={16} />;
+    case 'Preparing':
+    case 'Taking Off':
+      return <Rocket className="text-slate-400 animate-bounce" size={16} />;
+    case 'Surveillance':
+      return <CheckCircle className="text-cyan-400 animate-pulse" size={16} />;
+    // Add further stages if needed
     default:
       return <AlertTriangle className="text-orange-500" size={16} />;
   }
 };
 
-const DronesPanel: React.FC<DronesPanelProps> = ({ drones, onDispatchDrone, selectedIncident, droneStage, activeDrone, droneStageImage }) => {
+const DronesPanel: React.FC<DronesPanelProps> = ({
+  drones,
+  onDispatchDrone,
+  selectedIncident,
+  droneStage,
+  activeDrone,
+  droneStageImage,
+}) => {
   return (
     <Card className="glassmorphic h-full animate-fade-in" style={{ animationDelay: '0.1s' }}>
       <CardHeader>

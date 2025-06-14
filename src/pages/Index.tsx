@@ -59,7 +59,7 @@ const Index = () => {
       toast.error('No incident selected to dispatch to.');
       return;
     }
-    
+
     const droneStation = droneStations.find(s => s.name === drone.station);
     if (!droneStation) {
       toast.error('Could not find drone station.');
@@ -68,16 +68,19 @@ const Index = () => {
 
     setActiveDrone(drone);
     addLog(`Preparing ${drone.name} for takeoff to ${selectedIncident.location}.`);
+
+    // The staged animation names
     setDroneStage("Preparing for Takeoff");
-    setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Preparing' } : dr));
+    // Only use allowed status values in drone object
+    setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Charging' } : dr));
     setIncidents(i => i.map(inc => inc.id === selectedIncident.id ? { ...inc, status: 'In Progress' } : inc));
     setDronePath([droneStation.coords, selectedIncident.coords as [number, number]]);
 
-    // Simulate drone sequence
+    // Simulate drone sequence using only Drone status values for .status
     setTimeout(() => {
       setDroneStage("Taking Off");
       addLog(`${drone.name} is taking off.`);
-      setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Taking Off' } : dr));
+      setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Charging' } : dr));
       setTimeout(() => {
         setDroneStage("En Route");
         addLog(`${drone.name} en route to ${selectedIncident.location}.`);
@@ -89,11 +92,11 @@ const Index = () => {
           setTimeout(() => {
             setDroneStage("Surveillance");
             addLog(`${drone.name} started surveillance at ${selectedIncident.location}.`);
-            setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Surveillance' } : dr));
+            setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'On Site' } : dr));
             setTimeout(() => {
               setDroneStage("Active Firefighting");
               addLog(`${drone.name} actively fighting fire at ${selectedIncident.location}.`);
-              setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'Active Firefighting' } : dr));
+              setDrones(d => d.map(dr => dr.id === drone.id ? { ...dr, status: 'On Site' } : dr));
               setTimeout(() => {
                 setDroneStage("Fire Extinguished");
                 addLog(`Fire at ${selectedIncident.location} extinguished by ${drone.name}.`);
